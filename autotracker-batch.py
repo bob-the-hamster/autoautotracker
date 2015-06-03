@@ -1075,6 +1075,10 @@ for songname in os.listdir(where):
         full_songname = os.path.join(where, songname)
         zipf.write(full_songname, songname)
         os.unlink(full_songname)
+readme = """Randomly generated music.
+See https://github.com/bob-the-hamster/autoautotracker for more information.
+This music is all public domain. You can do anything you want with it."""
+zipf.writestr("README.txt", readme)
 
 zipf.close()
 print "Zipped them all up to %s" % (zipname)
