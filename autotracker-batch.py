@@ -7,6 +7,7 @@
 # by Ben "GreaseMonkey" Russell, 2011. Public domain.
 # https://github.com/wibblymat/ld24/blob/master/autotracker.py
 #
+#
 # BUGS:
 # - sometimes gets stuck in an infinite loop. attempted to alleviate it but it doesn't work.
 # - i think it sometimes jumps further than an octave in some situations
@@ -808,7 +809,7 @@ class Generator_AmbientMelody(Generator):
                     row += self.beatrow
             elif row-bbeg >= 2*self.beatrow and random.random() < 0.3:
                 backstep = random.randint(3,min(10,row//(self.beatrow//2)))*(self.beatrow//2)
-                print "back", row, backstep
+                #print "back", row, backstep
 
                 for i in xrange(backstep):
                     if row-bbeg >= blen:
@@ -834,13 +835,13 @@ class Generator_AmbientMelody(Generator):
                         break
 
                     m = None
-                    print rbn
+                    #print rbn
                     for j in xrange(20):
                         m = random.choice(self.MOTIF_PROSPECTS)
 
                         down = random.random() < (8.0+(self.ln-base))/8.0 if self.ln != -1 else 0.5
 
-                        print m,rbn,down,base
+                        #print m,rbn,down,base
                         if down:
                             m = [rbn-v for v in m]
                         else:
@@ -867,7 +868,7 @@ class Generator_AmbientMelody(Generator):
                 if rbn != self.ln:
                     m = [rbn] + m
 
-                print m
+                #print m
                 self.mq += m
 
                 # repeat at same row
@@ -1005,10 +1006,10 @@ def dump_random_music_file():
 
     MIDDLE_C = 220.0 * (2.0 ** (3.0 / 12.0))
 
-    print "Creating module"
+    #print "Creating module"
     itf = ITFile()
 
-    print "Generating samples"
+    #print "Generating samples"
     # these could do with some work, they're a bit crap ATM --GM
     # note: commented a couple out as they use a fair whack of space and are unused.
     SMP_GUITAR = itf.smp_add(Sample_KS(name = "KS Guitar", freq = MIDDLE_C/2, decay = 0.005, nfrqmul = 1.0, filt0 = 0.1, filtn = 0.6, filtf = 0.0004, length_sec = 1.0))
@@ -1022,7 +1023,7 @@ def dump_random_music_file():
     SMP_SNARE = itf.smp_add(Sample_NoiseHit(name = "NH Snare", decay = 0.12, filtl = 0.15, filth = 0.149))
 
 
-    print "Generating patterns"
+    #print "Generating patterns"
     strat = Strategy_Main(random.randint(50,50+12-1)+12, Key_Minor if random.random() < 0.6 else Key_Major, 128, 32)
     strat.gen_add(Generator_Drums(s_kick = SMP_KICK, s_snare = SMP_SNARE, s_hhc = SMP_HHC, s_hho = SMP_HHO))
     strat.gen_add(Generator_AmbientMelody(smp = SMP_GUITAR))
@@ -1030,7 +1031,7 @@ def dump_random_music_file():
     for i in xrange(6):
         itf.ord_add(itf.pat_add(strat.get_pattern()))
 
-    print "Saving"
+    #print "Saving"
 
     name = randoname()
     itf.name = name
@@ -1039,7 +1040,7 @@ def dump_random_music_file():
         fname = sys.argv[1]
     itf.save(fname)
 
-    print "Done"
+    #print "Done"
     print "Saved as \"%s\"" % fname
 
 for i in xrange(10):
