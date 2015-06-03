@@ -1043,7 +1043,7 @@ def dump_random_music_file():
     #print "Done"
     print "Generated \"%s\"" % fname
 
-for i in xrange(10):
+for i in xrange(50):
     # Start creating music as a process
     p = multiprocessing.Process(target=dump_random_music_file)
     p.start()
