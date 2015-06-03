@@ -1041,7 +1041,7 @@ def dump_random_music_file():
     itf.save(fname)
 
     #print "Done"
-    print "Saved as \"%s\"" % fname
+    print "Generated \"%s\"" % fname
 
 for i in xrange(10):
     # Start creating music as a process
@@ -1056,7 +1056,25 @@ for i in xrange(10):
 
     # If thread is still active
     if p.is_alive():
-        print "Detected infinite loop bug, tough beans!"
+        print "WARNING: Detected infinite loop bug, tough beans!"
         # Terminate
         p.terminate()
         p.join()
+
+
+# Now zip up the results!
+import zipfile
+where = os.path.dirname(__file__)
+zipname = os.path.join(where, "output.zip")
+if os.path.isfile(zipname):
+    os.unlink(zipname)
+zipf = zipfile.ZipFile(zipname, 'w')
+
+for songname in os.listdir(where):
+    if songname.endswith(".it"):
+        full_songname = os.path.join(where, songname)
+        zipf.write(full_songname, songname)
+        os.unlink(full_songname)
+
+zipf.close()
+print "Zipped them all up to %s" % (zipname)
