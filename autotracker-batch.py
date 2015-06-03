@@ -1068,7 +1068,7 @@ where = os.path.dirname(__file__)
 zipname = os.path.join(where, "output.zip")
 if os.path.isfile(zipname):
     os.unlink(zipname)
-zipf = zipfile.ZipFile(zipname, 'w')
+zipf = zipfile.ZipFile(zipname, 'w', zipfile.ZIP_DEFLATED)
 
 for songname in os.listdir(where):
     if songname.endswith(".it"):
