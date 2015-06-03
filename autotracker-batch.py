@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # autotracker-batch - way more <ADJECTIVE> music than you had hoped for!
-# lightly tweaked by James Paige, 2015, Public domain
+# lightly tweaked by James Paige / Bob the Hamster, 2015, Public domain
 #
 # Forked from:
 # autotracker-bottomup - the quite a few times more ultimate audio experience
@@ -13,9 +13,13 @@
 # oh and:
 # - has moments where it sounds bad. if you can fix this for good, let me know!
 
-import sys, struct, random
+import sys
+import struct
+import random
 import os
 import math
+import multiprocessing
+import time
 
 # tunables.
 SMP_FREQ = 44100
@@ -926,6 +930,71 @@ def load_wordlist(filename):
     f.close()
     return result
 
+# pick a random name
+RN_NOUNS = load_wordlist("nouns.txt")
+RN_ADJECTIVES = load_wordlist("adjectives.txt")
+RN_PPRONOUNS = load_wordlist("ppronouns.txt")
+
+RN_VERBS = [
+    # TODO
+]
+
+RN_PATTERNS = [
+    "the (n[0])'s (n[0,1])",
+    "(N[0])'s (n[0,1])",
+    "(n[0,1]) of (N[0,1])",
+    "on the (n[0])'s (n[0,1])",
+    "(n[0,1]) of the (n[0,1])",
+    "the (a) (n[0,1])",
+    "(A) (n[0])",
+    "(a) (n[1])",
+    "(a) and (a)",
+    "(N[0,1]) and (N[0,1])",
+    "(p) (a) (n[0,1])",
+    "(p) (n[0,1]) is (N[0,1])",
+]
+
+def randoname():
+    pat = random.choice(RN_PATTERNS)
+    while "(" in pat:
+        ps, po, pp = pat.partition("(")
+        p, pc, pn = pp.partition(")")
+
+        assert pc == ")", "expected ')' in name pattern"
+
+        p = random.choice(p.split("|"))
+        if p.startswith("n") or p.startswith("N"):
+            idx = random.choice(eval(p[1:]))
+            w = random.choice(RN_NOUNS)
+            if idx == 1:
+                # Pluralizing in this way is often wrong, but who cares? Not me!
+                w += "s"
+            if idx in [0] and p.startswith("N"):
+                if w[0] in "aeiouAEIOU":
+                    p = "an " + w
+                else:
+                    p = "a " + w
+            else:
+                p = w
+        elif p.startswith("a") or p.startswith("A"):
+            w = random.choice(RN_ADJECTIVES)
+            if p.startswith("A"):
+                if w[0] in "aeiouAEIOU":
+                    p = "an " + w
+                else:
+                    p = "a " + w
+            else:
+                p = w
+        elif p.startswith("p"):
+            p = random.choice(RN_PPRONOUNS)
+        else:
+            raise Exception("invalid name pattern type")
+
+        pat = ps + p + pn
+
+    return pat
+        
+    
 #################
 #               #
 #   BOOTSTRAP   #
@@ -963,100 +1032,9 @@ def dump_random_music_file():
 
     print "Saving"
 
-    # pick a random name
-    RN_NOUNS = [
-        ("cat","cats"),("kitten","kittens"),
-        ("dog","dogs"),("puppy","puppies"),
-        ("elf","elves"),("knight","knights"),
-        ("wizard","wizards"),("witch","witches"),("leprechaun","leprechauns"),
-        ("dwarf","dwarves"),("golem","golems"),("troll","trolls"),
-        ("city","cities"),("castle","castles"),("town","towns"),("village","villages"),
-        ("journey","journeys"),("flight","flights"),("place","places"),
-        ("bird","birds"),
-        ("ocean","oceans"),("sea","seas"),
-        ("boat","boats"),("ship","ships"),
-        ("whale","whales"),
-        ("brother","brothers"),("sister","sisters"),
-        ("viking","vikings"),("ghost","ghosts"),
-        ("garden","gardens"),("park","parks"),
-        ("forest","forests"),("ogre","ogres"),
-        ("sweet","sweets"),("candy","candies"),
-        ("hand","hands"),("foot","feet"),("arm","arms"),("leg","legs"),
-        ("body","bodies"),("head","heads"),("wing","wings"),
-        ("gorilla","gorillas"),("ninja","ninjas"),("bear","bears"),
-        ("vertex","vertices"),("matrix","matrices"),("simplex","simplices"),
-        ("shape","shapes"),
-        ("apple","apples"),("pear","pears"),("banana","bananas"),
-        ("orange","oranges"),
-        ("demoscene","demoscenes"),
-        ("sword","swords"),("shield","shields"),("gun","guns"),("cannon","cannons"),
-        ("report","reports"),("sign","signs"),("year","years"),("age","ages"),
-        ("blood","bloods"),("breed","breeds"),("monument","monuments"),
-        ("cheese","cheeses"),("horse","horses"),("sheep","sheep"),("fish","fish"),
-        ("dock","docks"),("tube","tubes"),("road","roads"),("path","paths"),
-        ("tunnel","tunnels"),("retort","retorts"),
-        ("toaster","toasters"),("goat","goats"),
-        ("tofu","tofus"),("vine","vines"),("branch","branches"),
-
-    ]
-
-    RN_ADJECTIVES = load_wordlist("adjectives.txt")
-
-    RN_VERBS = [
-        # TODO
-    ]
-
-    RN_PATTERNS = [
-        "the (n[0])'s (n[0,1])",
-        "(N[0])'s (n[0,1])",
-        "(n[0,1]) of (N[0,1])",
-        "on the (n[0])'s (n[0,1])",
-        "(n[0,1]) of the (n[0,1])",
-        "the (a) (n[0,1])",
-        "(A) (n[0])",
-        "(a) (n[1])",
-        "(a) and (a)",
-        "(N[0,1]) and (N[0,1])",
-    ]
-
-    def randoname():
-        pat = random.choice(RN_PATTERNS)
-        while "(" in pat:
-            ps, po, pp = pat.partition("(")
-            p, pc, pn = pp.partition(")")
-
-            assert pc == ")", "expected ')' in name pattern"
-
-            p = random.choice(p.split("|"))
-            if p.startswith("n") or p.startswith("N"):
-                idx = random.choice(eval(p[1:]))
-                w = random.choice(RN_NOUNS)[idx]
-                if idx in [0] and p.startswith("N"):
-                    if w[0] in "aeiouAEIOU":
-                        p = "an " + w
-                    else:
-                        p = "a " + w
-                else:
-                    p = w
-            elif p.startswith("a") or p.startswith("A"):
-                w = random.choice(RN_ADJECTIVES)
-                if p.startswith("A"):
-                    if w[0] in "aeiouAEIOU":
-                        p = "an " + w
-                    else:
-                        p = "a " + w
-                else:
-                    p = w
-            else:
-                raise Exception("invalid name pattern type")
-
-            pat = ps + p + pn
-
-        return pat
-
     name = randoname()
     itf.name = name
-    fname = "bu-%s.it" % name.replace(" ","-").replace("'","")
+    fname = "%s.it" % name.replace(" ","-").replace("'","")
     if len(sys.argv) > 1:
         fname = sys.argv[1]
     itf.save(fname)
@@ -1065,4 +1043,19 @@ def dump_random_music_file():
     print "Saved as \"%s\"" % fname
 
 for i in xrange(10):
-    dump_random_music_file()
+    # Start creating music as a process
+    p = multiprocessing.Process(target=dump_random_music_file)
+    p.start()
+
+    # Wait for 3 seconds or until process finishes
+    # The only time it should ever take so long is if the infinite loop
+    # bug has been triggered. If that bug is fixed, we don't have to
+    # do any of this multiprocessing.Process() nonsense anymore
+    p.join(3)
+
+    # If thread is still active
+    if p.is_alive():
+        print "Detected infinite loop bug, tough beans!"
+        # Terminate
+        p.terminate()
+        p.join()
